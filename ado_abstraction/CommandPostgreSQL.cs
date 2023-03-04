@@ -83,9 +83,9 @@ namespace RORM
             Command.Parameters.Clear();
         }
 
-        public override object ExecuteScalar()
+        public override async Task<object> ExecuteScalarAsync()
         {
-            return Command.ExecuteScalar();
+            return await Command.ExecuteScalarAsync();
         }
 
         public override async Task<DataReader> ExecuteReaderAsync()

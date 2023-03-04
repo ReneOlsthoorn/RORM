@@ -75,7 +75,7 @@ namespace RORM
             throw new NotImplementedException();
         }
 
-        public virtual object ExecuteScalar()
+        public virtual Task<object> ExecuteScalarAsync()
         {
             throw new NotImplementedException();
         }

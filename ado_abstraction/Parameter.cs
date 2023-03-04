@@ -7,10 +7,8 @@ namespace RORM
 {
     public class Parameter
     {
-
-        public virtual System.Data.DbType DbType { get; set; }
-        public virtual System.Data.ParameterDirection Direction { get; set; }
-        public virtual string ParameterName { get; set; }
+        public string ParameterName { get; set; }
+        public string ColumnName { get; set; } // when changing a parameter to JSON, we must know what column it is.
         public virtual object Value
         {
             get
@@ -23,19 +21,9 @@ namespace RORM
             }
         }
 
-        /* RORM uses parameters when executing sql. This is to prevent SQL injection.
-         * We want the parameter to have the correct type, so we set it according to the Type dictionary,
-         * which contains the native type (for most database interfaces). */
-        public virtual string Type { get; set; }
-
-
-        public virtual string ToSQLValueStringSpecific()
+        public virtual string EnsureValidColumnName(string columnName)
         {
-            return null;
+            return columnName;
         }
-
-
-
-
     }
 }

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Collections;
-using System.Dynamic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace RORM
@@ -41,6 +36,7 @@ namespace RORM
             }
         }
 
+
         public virtual Connection NewConnection(string connectionString)
         {
             throw new NotImplementedException();
@@ -56,6 +52,12 @@ namespace RORM
             throw new NotImplementedException();
         }
 
+        public virtual Task<object> GetAutoincrementValue(Transaction transaction, string currVal)
+        {
+            throw new NotImplementedException();
+        }
+
+
         public Command NewCommand(string sql)
         {
         	Command cmd = NewCommand();
@@ -63,22 +65,27 @@ namespace RORM
         	return cmd;
         }
 
-        public virtual Parameter GetParameter(object value = null, string name = null, int? teller = null)
+        public dynamic NewRow(string tableName = null)
+        {
+            DynaRow newDynaRow = new DynaRow(tableName);
+            newDynaRow._row.Connector = this;
+            return newDynaRow;
+        }
+
+        public virtual Parameter GetParameter(object dataValue = null, string dataKey = null, int? teller = null)
         {
             Parameter parameter = this.NewParameter();
-            parameter.Value = value;
+            parameter.Value = dataValue;
             parameter.ParameterName = null;
+            if (dataKey != null)
+            {
+                parameter.ColumnName = dataKey;
+            }
             return parameter;
         }
-        
 
 
-        public virtual object GetAutoincrementValue(Transaction transaction, string currVal)
-        {
-            throw new NotImplementedException();
-        }
-
-        public object GetAutoincrementValue_helper(Transaction transaction, string identitySelectStatement)
+        public async Task<object> GetAutoincrementValue_helper(Transaction transaction, string identitySelectStatement)
         {
             Command cmd = this.NewCommand();
             cmd.Connection = this.Connection;
@@ -98,7 +105,7 @@ namespace RORM
                     this.Connection.Connector.Log(string.Format("{0};", identitySelectStatement));
                 }
             }
-            object result = cmd.ExecuteScalar();
+            object result = await cmd.ExecuteScalarAsync();
             if (Convert.IsDBNull(result) || (result == null))
             {
                 return null;
@@ -132,6 +139,31 @@ namespace RORM
 
             this.Connection.Connector.Log(strTolog);     	
         }
+
+
+        public string DetermineTablename(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                return null;
+            }
+
+            string singleLineSQL = Regex.Replace(sql, "[\n\r\x20]+", " ");
+            MatchCollection coll = Regex.Matches(singleLineSQL, "[\x20]+FROM[\x20]+([\"A-Z0-9_]+)", RegexOptions.IgnoreCase);
+            if (coll.Count != 1)
+            {
+                return null; // Minder of meer dan één tabel mag niet.
+            }
+            foreach (Match m in coll)
+            {
+                if (m.Success)
+                {
+                    return m.Groups[1].Value;
+                }
+            }
+            return null;
+        }
+
 
         public Task<int> ExecuteNonQueryAsync(string sql, params object[] parameters)
         {
@@ -183,49 +215,20 @@ namespace RORM
         }
 
 
-        public virtual object ExecuteScalar(string sql)
+
+        public IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, params object[] parameters)
+        {
+            return ExecuteQueryAsync(sql, transaction: null, parameters);
+        }
+
+        public IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, Transaction transaction, params object[] parameters)
         {
             Command cmd = this.NewCommand();
-            cmd.Connection = this.Connection;
-            cmd.CommandText = sql;
-            AdhocQueryLogging(sql);
-            
-        	object result = cmd.ExecuteScalar();
-            cmd.ClearParameters();
-            cmd.Close();
-
-            return result;
-        }
-
-
-        public string DetermineTablename(string sql)
-        {
-            if (string.IsNullOrWhiteSpace(sql))
+            if (transaction != null)
             {
-                return null;
+                cmd.Transaction = transaction;
             }
-
-            string singleLineSQL = Regex.Replace(sql, "[\n\r\x20]+", " ");
-            MatchCollection coll = Regex.Matches(singleLineSQL, "[\x20]+FROM[\x20]+([\"A-Z0-9_]+)", RegexOptions.IgnoreCase);
-            if (coll.Count != 1)
-            {
-                return null; // Minder of meer dan één tabel mag niet.
-            }
-            foreach (Match m in coll)
-            {
-                if (m.Success)
-                {
-                    return m.Groups[1].Value;
-                }
-            }
-            return null;
-        }
-
-        public dynamic NewRow(string tableName = null)
-        {
-            DynaRow newDynaRow = new DynaRow(tableName);
-            newDynaRow._row.Connector = this;
-            return newDynaRow;
+            return ExecuteQueryAsync(sql, cmd, parameters);
         }
 
         public async IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, Command cmd, params object[] parameters)
@@ -262,28 +265,27 @@ namespace RORM
             cmd.Close();
         }
 
-        public IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, Transaction transaction, params object[] parameters)
+
+        public async Task<List<Dictionary<string, object>>> GetDictionaryListAsync(string sqlStatement, params object[] parameters)
         {
-            Command cmd = this.NewCommand();
-            if (transaction != null) {
-                cmd.Transaction = transaction;
+            var result = new List<Dictionary<string, object>>();
+            await foreach (var row in ExecuteQueryAsync(sqlStatement, parameters))
+            {
+                result.Add(row.GetDictionary());
             }
-            return ExecuteQueryAsync(sql, cmd, parameters);
+            return result;
         }
 
-        public IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, params object[] parameters)
+        public async Task<List<dynamic>> GetDynamicListAsync(string sqlStatement, params object[] parameters)
         {
-            return ExecuteQueryAsync(sql, transaction: null, parameters);
+            var result = new List<dynamic>();
+            await foreach (var row in ExecuteQueryAsync(sqlStatement, parameters))
+            {
+                result.Add(row);
+            }
+            return result;
         }
 
-        /*
-        public async Task<dynamic> ExecuteGet(string sql, Transaction transaction, params object[] parameters)
-        {
-            var result = await this.ExecuteQuery(sql, parameters: parameters, transaction: transaction);
-
-            return await this.ExecuteQuery(sql, parameters: parameters, transaction: transaction)..ToAsyncList().FirstOrDefault();
-        }
-        */
 
     }
 }

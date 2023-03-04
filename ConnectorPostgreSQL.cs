@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RORM
 {
@@ -29,9 +30,9 @@ namespace RORM
             return (Command)result;
         }
 
-        public override object GetAutoincrementValue(Transaction transaction, string currVal)
+        public async override Task<object> GetAutoincrementValue(Transaction transaction, string currVal)
         {
-            return GetAutoincrementValue_helper(transaction, $"select currval('{currVal}')");
+            return await GetAutoincrementValue_helper(transaction, $"select currval('{currVal}')");
         }
 
     }

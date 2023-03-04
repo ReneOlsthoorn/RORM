@@ -25,6 +25,7 @@ namespace RORM
         public ActionPlan DBActionPlan { get; set; }
         public string TableName = null;
         public string AutoincrementField = null;
+        public Action<string, List<Parameter>> OnAfterParameterCreation = null;
 
         public DynaRowHelper(string tableName = null)
         {
@@ -130,6 +131,10 @@ namespace RORM
                 string columnsPart;
                 string valuesPart;
                 GetInsertColumns(parameters, out columnsPart, out valuesPart);
+                if (OnAfterParameterCreation != null)
+                {
+                    OnAfterParameterCreation(TableName, parameters);
+                }
                 string updateStatement = "";
                 if (columnsPart == null)
                 {
@@ -144,7 +149,7 @@ namespace RORM
                 {
                     string[] autoinc = AutoincrementField.Split(";");
                     string autoIncColumnName = autoinc[0];
-                    Data[autoIncColumnName] = Connector.GetAutoincrementValue(transaction, autoinc[1]);
+                    Data[autoIncColumnName] = await Connector.GetAutoincrementValue(transaction, autoinc[1]);
                 }
                 JustSavedInDatabase();
             }
@@ -190,8 +195,6 @@ namespace RORM
             DBState = State.New;
             OldData = new Dictionary<string, object>();
         }
-
-
 
         StringBuilder wherePart = null;
         public void EnsureAnd()
@@ -274,8 +277,6 @@ namespace RORM
         }
 
 
-
-
         StringBuilder insertPart1 = null;
         StringBuilder insertPart2 = null;
         public void EnsureInsertComma()
@@ -314,7 +315,7 @@ namespace RORM
                 {
                     parameterName = $":p{parameterCounter++}";
                 }
-                AddInsertAnd(key, parameterName);
+                AddInsertAnd(parameter.EnsureValidColumnName(key), parameterName);
             }
             if (insertPart1 == null)
             {
@@ -325,8 +326,6 @@ namespace RORM
             columnsPart = insertPart1.ToString();
             valuesPart = insertPart2.ToString();
         }
-
-
 
     }
 }
