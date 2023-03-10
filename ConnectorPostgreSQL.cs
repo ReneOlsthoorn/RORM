@@ -24,9 +24,17 @@ namespace RORM
 
         public override Command NewCommand()
         {
+            ConnectorPostgreSQL pgConnector = this;
+            ConnectionPostgreSQL pgConnection = this.Connection as ConnectionPostgreSQL;
+            if (pgConnection.Connection.State != System.Data.ConnectionState.Open)
+            {
+                pgConnection.Connection.Open();
+            }
+
             CommandPostgreSQL result = new CommandPostgreSQL();
-            result.Connector = this as Connector;
+            result.Connector = pgConnector;
             result.Connection = result.Connector.Connection;
+
             return (Command)result;
         }
 
