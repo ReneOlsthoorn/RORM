@@ -12,7 +12,7 @@ using Npgsql;
 using NpgsqlTypes;
 using RORM;
 
-string pgConnStr = "Host=localhost;Username=postgres;Password=robotman;Database=rtib";
+string pgConnStr = "Host=localhost;Username=postgres;Password=x;Database=x";
 
 RORM.ConnectorPostgreSQL pgConn = new RORM.ConnectorPostgreSQL();
 pgConn.Connection = pgConn.NewConnection(pgConnStr);
