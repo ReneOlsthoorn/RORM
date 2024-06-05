@@ -7,7 +7,9 @@ CREATE TABLE public.testtable (
 	jsondata jsonb NULL
 );
 */
+'''
 
+'''
 using Npgsql;
 using NpgsqlTypes;
 using RORM;
@@ -17,7 +19,7 @@ string pgConnStr = "Host=localhost;Username=postgres;Password=x;Database=x";
 RORM.ConnectorPostgreSQL pgConn = new RORM.ConnectorPostgreSQL();
 pgConn.Connection = pgConn.NewConnection(pgConnStr);
 pgConn.Open();
-
+'''
 dynamic row = pgConn.NewRow();
 ((DynaRowHelper)(row._row)).OnAfterParameterCreation = JsonParameterCorrection;
 row.jsondata = """
