@@ -1,6 +1,6 @@
 # RORM
 Object Relational Mapper for C# dotnet
-
+'''
 /*
 CREATE TABLE public.testtable (
 	id bigserial NOT NULL,
@@ -45,4 +45,4 @@ void JsonParameterCorrection(string table, List<RORM.Parameter> parameters)
         }
     }
 }
-
+'''
