@@ -44,7 +44,7 @@ namespace RORM
             throw new NotImplementedException();
         }
 
-        public virtual Dictionary<string, List<string>> GetParameterDictForLogging()
+        public virtual Dictionary<string, string> GetParameterDictForLogging()
         {
             throw new NotImplementedException();
         }

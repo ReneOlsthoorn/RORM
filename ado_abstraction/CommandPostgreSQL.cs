@@ -72,7 +72,7 @@ namespace RORM
                 foreach (Parameter parameter in parameters)
                 {
                     NpgsqlParameter param = ((ParameterPostgreSQL)parameter).parameter;
-                    param.ParameterName = $"p{pCounter++}";
+                    param.ParameterName = $"{pCounter++}";
                     Command.Parameters.Add(param);
                 }
             }
@@ -94,6 +94,29 @@ namespace RORM
             DataReaderPostgreSQL reader = new DataReaderPostgreSQL();
             reader.datareader = await Command.ExecuteReaderAsync();
             return reader as DataReader;
+        }
+
+        public override Dictionary<string, string> GetParameterDictForLogging()
+        {
+            Dictionary<string, string> result = new();
+            foreach (NpgsqlParameter param in Command.Parameters)
+            {
+                string theValue = $"@{param.ParameterName}";
+                if (param.Value == null)
+                    theValue = "NULL";
+                else if (param.Value is string)
+                    theValue = $"'{param.Value.ToString()}'";
+                else if (param.Value is bool boolObj)
+                    theValue = (boolObj == true) ? "true" : "false";
+                else if (param.Value is DateTime dtObj)
+                    theValue = $"'{dtObj.ToString("o")}'::timestamp";
+                else
+                    theValue = Convert.ToString(param.Value);
+
+                result[$"@{param.ParameterName}"] = theValue;
+            }
+
+            return result;
         }
 
         public override async Task<int> ExecuteNonQueryAsync()

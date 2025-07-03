@@ -129,11 +129,11 @@ namespace RORM
 
             if (cmd != null)
             {
-                Dictionary<string, List<string>> strDict = cmd.GetParameterDictForLogging();
+                Dictionary<string, string> strDict = cmd.GetParameterDictForLogging();
                 foreach (string key in strDict.Keys)
                 {
-                    List<string> lijst = strDict[key];
-                    strTolog = strTolog.Replace(key, lijst[0]);
+                    string replaceValue = strDict[key];
+                    strTolog = strTolog.Replace(key, replaceValue);
                 }
             }
 
@@ -239,7 +239,7 @@ namespace RORM
             {
                 cmd.AddParameters(parameters);
             }
-            AdhocQueryLogging(sql);
+            AdhocQueryLogging(sql, cmd);
 
             string tableName = DetermineTablename(sql);
             DataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);

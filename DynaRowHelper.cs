@@ -25,6 +25,7 @@ namespace RORM
         public ActionPlan DBActionPlan { get; set; }
         public string TableName = null;
         public string AutoincrementField = null;
+        public string UpdateId = null;
         public Action<string, List<Parameter>> OnAfterParameterCreation = null;
 
         public DynaRowHelper(string tableName = null)
@@ -121,6 +122,10 @@ namespace RORM
             if (this.DBActionPlan == DynaRowHelper.ActionPlan.Update)
             {
                 (string setPart, int parameterCounter) = GetSet(parameters);
+                if (OnAfterParameterCreation != null)
+                {
+                    OnAfterParameterCreation(TableName, parameters);
+                }
                 string wherePart = GetWhere(parameters, parameterCounter);
                 string updateStatement = $"update {TableName} set {setPart}{wherePart}";
                 rowsAffected = await Connector.ExecuteNonQueryAsync(updateStatement, parameters);
@@ -219,21 +224,36 @@ namespace RORM
         public string GetWhere(List<Parameter> parameters, int parameterCounter = 1)
         {
             wherePart = null;
-            foreach (string key in Data.Keys)
+
+            if (UpdateId != null)
             {
-                object waarde = OldestValue(key);
-                if (waarde == null)
-                {
-                    continue;
-                }
-                Parameter parameter = Connector.GetParameter(OldestValue(key), "where" + key);
+                Parameter parameter = Connector.GetParameter(OldestValue(UpdateId), "where" + UpdateId);
                 parameters.Add(parameter);
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
                 {
-                    parameterName = $":p{parameterCounter++}";
+                    parameterName = $"@{parameterCounter++}";
                 }
-                AddWhereAnd($"{key} = {parameterName}");
+                AddWhereAnd($"{UpdateId} = {parameterName}");
+            }
+            else
+            {
+                foreach (string key in Data.Keys)
+                {
+                    object waarde = OldestValue(key);
+                    if (waarde == null)
+                    {
+                        continue;
+                    }
+                    Parameter parameter = Connector.GetParameter(OldestValue(key), "where" + key);
+                    parameters.Add(parameter);
+                    string parameterName = parameter.ParameterName;
+                    if (parameterName == null)
+                    {
+                        parameterName = $"@{parameterCounter++}";
+                    }
+                    AddWhereAnd($"{key} = {parameterName}");
+                }
             }
             return wherePart.ToString();
         }
@@ -269,7 +289,7 @@ namespace RORM
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
                 {
-                    parameterName = $":p{parameterCounter++}";
+                    parameterName = $"@{parameterCounter++}";
                 }
                 AddSetAnd($"{key} = {parameterName}");
             }
@@ -313,7 +333,7 @@ namespace RORM
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
                 {
-                    parameterName = $":p{parameterCounter++}";
+                    parameterName = $"@{parameterCounter++}";
                 }
                 AddInsertAnd(parameter.EnsureValidColumnName(key), parameterName);
             }
