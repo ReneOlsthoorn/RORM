@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace RORM
 {
@@ -12,24 +9,18 @@ namespace RORM
             ConnectionPostgreSQL result = new ConnectionPostgreSQL();
             result.TheConnectionString = connectionString;
             result.Connection.ConnectionString = connectionString;
-            result.Connector = this as Connector;
-            return (Connection)result;
+            result.Connector = this;
+            return result;
         }
 
-        public override Parameter NewParameter()
-        {
-            ParameterPostgreSQL result = new ParameterPostgreSQL();
-            return (Parameter)result;
-        }
+        public override Parameter NewParameter() => new ParameterPostgreSQL();
 
         public override Command NewCommand()
         {
             ConnectorPostgreSQL pgConnector = this;
             ConnectionPostgreSQL pgConnection = this.Connection as ConnectionPostgreSQL;
             if (pgConnection.Connection.State != System.Data.ConnectionState.Open)
-            {
                 pgConnection.Connection.Open();
-            }
 
             CommandPostgreSQL result = new CommandPostgreSQL();
             result.Connector = pgConnector;

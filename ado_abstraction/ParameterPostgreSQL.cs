@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Npgsql;
-using NpgsqlTypes;
 
 namespace RORM
 {
@@ -17,26 +14,16 @@ namespace RORM
 
         public override object Value
         {
-            get
-            {
-                return parameter.Value;
-            }
+            get => parameter.Value;
             set
             {
                 if (value == null)
-                {
                     parameter.Value = DBNull.Value;
-                }
                 else
-                {
                     parameter.Value = value;
-                }
             }
         }
         
-        public override string EnsureValidColumnName(string columnName)
-        {
-            return $"\"{columnName}\"";
-        }
+        public override string EnsureValidColumnName(string columnName) => $"\"{columnName}\"";
     }
 }

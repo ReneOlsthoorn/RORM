@@ -7,33 +7,25 @@ namespace RORM
 {
     public class Connector
     {
-        public delegate void LogSQL(string log);
-
         public Connection Connection { get; set; }
-        public LogSQL SQL_Log = null;
+        public Action<string> Logger = null;
         
-        public void Log(string theLog)
+        public void Log(string log)
         {
-            if (SQL_Log != null)
-            {
-                SQL_Log(theLog);
-            }
+            if (Logger != null)
+                Logger(log);
         }
 
         public void Open()
         {
             if (Connection != null)
-            {
                 Connection.Open();
-            }
         }
 
         public void Close()
         {
             if (Connection != null)
-            {
                 Connection.Close();
-            }
         }
 
 
@@ -78,9 +70,8 @@ namespace RORM
             parameter.Value = dataValue;
             parameter.ParameterName = null;
             if (dataKey != null)
-            {
                 parameter.ColumnName = dataKey;
-            }
+
             return parameter;
         }
 
@@ -90,42 +81,32 @@ namespace RORM
             Command cmd = this.NewCommand();
             cmd.Connection = this.Connection;
             if (transaction != null)
-            {
                 cmd.Transaction = transaction;
-            }
+
             cmd.CommandText = identitySelectStatement;
-            if (this.Connection.Connector.SQL_Log != null)
+            if (this.Connection.Connector.Logger != null)
             {
                 if (identitySelectStatement.EndsWith(";"))
-                {
                     this.Connection.Connector.Log(identitySelectStatement);
-                }
                 else
-                {
                     this.Connection.Connector.Log(string.Format("{0};", identitySelectStatement));
-                }
             }
             object result = await cmd.ExecuteScalarAsync();
             if (Convert.IsDBNull(result) || (result == null))
-            {
                 return null;
-            }
+
             return result;
         }
        
         
         private void AdhocQueryLogging(string sql, Command cmd = null)
         {
-            if (this.Connection.Connector.SQL_Log == null)
-            {
+            if (this.Connection.Connector.Logger == null)
                 return;
-            }
 
             string strTolog = sql;
             if (!sql.EndsWith(";"))
-            {
                 strTolog = sql + ";";
-            }
 
             if (cmd != null)
             {
@@ -144,22 +125,17 @@ namespace RORM
         public string DetermineTablename(string sql)
         {
             if (string.IsNullOrWhiteSpace(sql))
-            {
                 return null;
-            }
 
             string singleLineSQL = Regex.Replace(sql, "[\n\r\x20]+", " ");
             MatchCollection coll = Regex.Matches(singleLineSQL, "[\x20]+FROM[\x20]+([\"A-Z0-9_]+)", RegexOptions.IgnoreCase);
             if (coll.Count != 1)
-            {
                 return null; // Minder of meer dan één tabel mag niet.
-            }
+
             foreach (Match m in coll)
             {
                 if (m.Success)
-                {
                     return m.Groups[1].Value;
-                }
             }
             return null;
         }
@@ -174,15 +150,13 @@ namespace RORM
         {
             Command cmd = this.NewCommand();
             if (transaction != null)
-            {
                 cmd.Transaction = transaction;
-            }
+
             cmd.Connection = this.Connection;
             cmd.CommandText = sql;
             if (parameters != null)
-            {
                 cmd.AddParameters(parameters);
-            }
+
             AdhocQueryLogging(sql, cmd);
 
             int nrRowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -196,15 +170,13 @@ namespace RORM
         {
             Command cmd = this.NewCommand();
             if (transaction != null)
-            {
                 cmd.Transaction = transaction;
-            }
+
             cmd.Connection = this.Connection;
             cmd.CommandText = sql;
             if (parameters != null)
-            {
                 cmd.AddHoParameters(parameters);
-            }
+
             AdhocQueryLogging(sql, cmd);
 
             int nrRowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -225,9 +197,8 @@ namespace RORM
         {
             Command cmd = this.NewCommand();
             if (transaction != null)
-            {
                 cmd.Transaction = transaction;
-            }
+
             return ExecuteQueryAsync(sql, cmd, parameters);
         }
 
@@ -236,9 +207,8 @@ namespace RORM
             cmd.Connection = this.Connection;
             cmd.CommandText = sql;
             if (parameters != null)
-            {
                 cmd.AddParameters(parameters);
-            }
+
             AdhocQueryLogging(sql, cmd);
 
             string tableName = DetermineTablename(sql);
@@ -252,9 +222,8 @@ namespace RORM
                 {
                     object waarde = reader[i];
                     if (Convert.IsDBNull(waarde))
-                    {
                         waarde = null;
-                    }
+
                     newDynaRow[reader.GetName(i)] = waarde;
                 }
                 newDynaRow._row.JustLoadedFromDatabase();
@@ -270,9 +239,8 @@ namespace RORM
         {
             var result = new List<Dictionary<string, object>>();
             await foreach (var row in ExecuteQueryAsync(sqlStatement, parameters))
-            {
                 result.Add(row.GetDictionary());
-            }
+
             return result;
         }
 
@@ -280,9 +248,8 @@ namespace RORM
         {
             var result = new List<dynamic>();
             await foreach (var row in ExecuteQueryAsync(sqlStatement, parameters))
-            {
                 result.Add(row);
-            }
+
             return result;
         }
 

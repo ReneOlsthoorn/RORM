@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Npgsql;
+﻿using Npgsql;
 
 namespace RORM
 {
@@ -28,7 +25,7 @@ namespace RORM
         {
             TransactionPostgreSQL transaction = new TransactionPostgreSQL();
             transaction.Transaction = Connection.BeginTransaction();
-            return transaction as Transaction;
+            return transaction;
         }
     }
 }

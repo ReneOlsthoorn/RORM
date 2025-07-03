@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
 
@@ -16,37 +15,22 @@ namespace RORM
             Command.CommandTimeout = 999;
         }
 
-        public override void Close()
-        {
-            Command.Dispose();
-        }
+        public override void Close() => Command.Dispose();
 
         public override Connection Connection
         {
-            set
-            {
-                Command.Connection = ((ConnectionPostgreSQL)value).Connection;
-            }
+            set => Command.Connection = ((ConnectionPostgreSQL)value).Connection;
         }
 
         public override Transaction Transaction
         {
-            set
-            {
-                Command.Transaction = ((TransactionPostgreSQL)value).Transaction;
-            }
+            set => Command.Transaction = ((TransactionPostgreSQL)value).Transaction;
         }
 
         public override string CommandText
         {
-            get
-            {
-            	return Command.CommandText;
-            }
-            set
-            {
-                Command.CommandText = value;
-            }
+            get => Command.CommandText;
+            set => Command.CommandText = value;
         }
 
         public override void AddParameters(params object[] parameters)
@@ -78,22 +62,16 @@ namespace RORM
             }
         }
 
-        public override void ClearParameters()
-        {
-            Command.Parameters.Clear();
-        }
-
-        public override async Task<object> ExecuteScalarAsync()
-        {
-            return await Command.ExecuteScalarAsync();
-        }
+        public override void ClearParameters() => Command.Parameters.Clear();
+        public override async Task<object> ExecuteScalarAsync() => await Command.ExecuteScalarAsync();
+        public override async Task<int> ExecuteNonQueryAsync() => await Command.ExecuteNonQueryAsync();
 
         public override async Task<DataReader> ExecuteReaderAsync()
         {
             Command.CommandTimeout = RORM.Command.Timeout;
             DataReaderPostgreSQL reader = new DataReaderPostgreSQL();
             reader.datareader = await Command.ExecuteReaderAsync();
-            return reader as DataReader;
+            return reader;
         }
 
         public override Dictionary<string, string> GetParameterDictForLogging()
@@ -115,13 +93,7 @@ namespace RORM
 
                 result[$"@{param.ParameterName}"] = theValue;
             }
-
             return result;
-        }
-
-        public override async Task<int> ExecuteNonQueryAsync()
-        {
-            return await Command.ExecuteNonQueryAsync();
         }
     }
 }
