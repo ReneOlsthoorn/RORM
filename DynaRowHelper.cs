@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -40,13 +39,11 @@ namespace RORM
         public object OldestValue(string kolom)
         {
             if (OldData.ContainsKey(kolom))
-            {
                 return OldData[kolom];
-            }
+
             if (Data.ContainsKey(kolom))
-            {
                 return Data[kolom];
-            }
+
             return null;
         }
 
@@ -62,71 +59,58 @@ namespace RORM
 
             if (!OldData.ContainsKey(kolom))
             {
-                if (Data.ContainsKey(kolom)) // if-statement added when the existing object has more columns in the database not selected in the query.
-                {
+                if (Data.ContainsKey(kolom))   // if-statement added when the existing object has more columns in the database not selected in the query.
                     OldData[kolom] = Data[kolom];
-                } else
-                {
+                else
                     OldData[kolom] = null;
-                }
             }
             Data[kolom] = waarde;
 
             if (DBActionPlan == ActionPlan.Nothing)
-            {
                 DBActionPlan = ActionPlan.Update;
-            }
         }
 
-        public async Task<int> Delete(Transaction transaction = null)
+        public async Task<int> DeleteAsync(Transaction transaction = null)
         {
             DBActionPlan = ActionPlan.Delete;
-            return await DBPersist(transaction);
+            return await DBPersistAsync(transaction);
         }
 
-        public async Task<int> Update(Transaction transaction = null)
+        public async Task<int> UpdateAsync(Transaction transaction = null)
         {
-            return await DBPersist(transaction);
+            return await DBPersistAsync(transaction);
         }
 
-        public async Task<int> Insert(string table = null, string autoincrement = null, Transaction transaction = null)
+        public async Task<int> InsertAsync(string table = null, string autoincrement = null, Transaction transaction = null)
         {
             if (table != null)
-            {
                 TableName = table;
-            }
+
             if (autoincrement != null)
-            {
                 AutoincrementField = autoincrement;
-            }
+
             SetToCreate();
-            return await DBPersist(transaction);
+            return await DBPersistAsync(transaction);
         }
 
-        public async Task<int> DBPersist(Transaction tran = null)
+        public async Task<int> DBPersistAsync(Transaction tran = null)
         {
             int rowsAffected = -1;
             if (TableName == null)
-            {
                 return rowsAffected;
-            }
-            List<Parameter> parameters = new List<Parameter>();
 
+            List<Parameter> parameters = new List<Parameter>();
             var connection = Connector.Connection;
 
             Transaction transaction = null;
-            if (tran == null) {
+            if (tran == null)
                 transaction = connection.BeginTransaction();
-            }
 
             if (this.DBActionPlan == DynaRowHelper.ActionPlan.Update)
             {
                 (string setPart, int parameterCounter) = GetSet(parameters);
-                if (OnAfterParameterCreation != null)
-                {
-                    OnAfterParameterCreation(TableName, parameters);
-                }
                 string wherePart = GetWhere(parameters, parameterCounter);
+                ParameterCorrection(parameters);
                 string updateStatement = $"update {TableName} set {setPart}{wherePart}";
                 rowsAffected = await Connector.ExecuteNonQueryAsync(updateStatement, parameters);
                 JustSavedInDatabase();
@@ -136,19 +120,13 @@ namespace RORM
                 string columnsPart;
                 string valuesPart;
                 GetInsertColumns(parameters, out columnsPart, out valuesPart);
-                if (OnAfterParameterCreation != null)
-                {
-                    OnAfterParameterCreation(TableName, parameters);
-                }
+                ParameterCorrection(parameters);
                 string updateStatement = "";
                 if (columnsPart == null)
-                {
                     updateStatement = $"insert into {TableName} DEFAULT VALUES";
-                }
                 else
-                {
                     updateStatement = $"insert into {TableName} ({columnsPart}) values ({valuesPart})";
-                }
+
                 rowsAffected = await Connector.ExecuteNonQueryAsync(updateStatement, parameters);
                 if (AutoincrementField != null)
                 {
@@ -161,17 +139,15 @@ namespace RORM
             else if (this.DBActionPlan == DynaRowHelper.ActionPlan.Delete)
             {
                 string wherePart = GetWhere(parameters);
+                ParameterCorrection(parameters);
                 string updateStatement = $"delete from {TableName} {wherePart}";
                 rowsAffected = await Connector.ExecuteNonQueryAsync(updateStatement, parameters);
                 JustDeletedInDatabase();
             }
-            else if (this.DBActionPlan == DynaRowHelper.ActionPlan.Nothing)
-            {
-            }
-            if (tran == null)
-            {
+            else if (this.DBActionPlan == DynaRowHelper.ActionPlan.Nothing) { }
+
+            if (transaction != null)
                 transaction.Commit();
-            }
 
             return rowsAffected;
         }
@@ -194,6 +170,12 @@ namespace RORM
             this.SetToCreate();
         }
 
+        public void ParameterCorrection(List<Parameter> parameters)
+        {
+            if (OnAfterParameterCreation != null)
+                OnAfterParameterCreation(TableName, parameters);
+        }
+
         public void SetToCreate()
         {
             DBActionPlan = ActionPlan.Create;
@@ -210,9 +192,7 @@ namespace RORM
                 wherePart.Append(" where ");
             }
             else
-            {
                 wherePart.Append(" and ");
-            }
         }
 
         public void AddWhereAnd(string sqlString)
@@ -231,9 +211,8 @@ namespace RORM
                 parameters.Add(parameter);
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
-                {
                     parameterName = $"@{parameterCounter++}";
-                }
+
                 AddWhereAnd($"{UpdateId} = {parameterName}");
             }
             else
@@ -242,16 +221,14 @@ namespace RORM
                 {
                     object waarde = OldestValue(key);
                     if (waarde == null)
-                    {
                         continue;
-                    }
+
                     Parameter parameter = Connector.GetParameter(OldestValue(key), "where" + key);
                     parameters.Add(parameter);
                     string parameterName = parameter.ParameterName;
                     if (parameterName == null)
-                    {
                         parameterName = $"@{parameterCounter++}";
-                    }
+
                     AddWhereAnd($"{key} = {parameterName}");
                 }
             }
@@ -263,13 +240,9 @@ namespace RORM
         public void EnsureSetComma()
         {
             if (setPart == null)
-            {
                 setPart = new StringBuilder();
-            }
             else
-            {
                 setPart.Append(",");
-            }
         }
 
         public void AddSetAnd(string sqlString)
@@ -288,9 +261,8 @@ namespace RORM
                 parameters.Add(parameter);
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
-                {
                     parameterName = $"@{parameterCounter++}";
-                }
+
                 AddSetAnd($"{key} = {parameterName}");
             }
             return (setPart.ToString(), parameterCounter);
@@ -332,9 +304,8 @@ namespace RORM
                 parameters.Add(parameter);
                 string parameterName = parameter.ParameterName;
                 if (parameterName == null)
-                {
                     parameterName = $"@{parameterCounter++}";
-                }
+
                 AddInsertAnd(parameter.EnsureValidColumnName(key), parameterName);
             }
             if (insertPart1 == null)

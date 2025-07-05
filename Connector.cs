@@ -28,27 +28,10 @@ namespace RORM
                 Connection.Close();
         }
 
-
-        public virtual Connection NewConnection(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual Parameter NewParameter()
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual Command NewCommand()
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual Task<object> GetAutoincrementValue(Transaction transaction, string currVal)
-        {
-            throw new NotImplementedException();
-        }
-
+        public virtual Connection NewConnection(string connectionString) => throw new NotImplementedException();
+        public virtual Parameter NewParameter() => throw new NotImplementedException();
+        public virtual Command NewCommand() => throw new NotImplementedException();
+        public virtual Task<object> GetAutoincrementValue(Transaction transaction, string currVal) => throw new NotImplementedException();
 
         public Command NewCommand(string sql)
         {
@@ -75,7 +58,6 @@ namespace RORM
             return parameter;
         }
 
-
         public async Task<object> GetAutoincrementValue_helper(Transaction transaction, string identitySelectStatement)
         {
             Command cmd = this.NewCommand();
@@ -97,7 +79,6 @@ namespace RORM
 
             return result;
         }
-       
         
         private void AdhocQueryLogging(string sql, Command cmd = null)
         {
@@ -112,15 +93,11 @@ namespace RORM
             {
                 Dictionary<string, string> strDict = cmd.GetParameterDictForLogging();
                 foreach (string key in strDict.Keys)
-                {
-                    string replaceValue = strDict[key];
-                    strTolog = strTolog.Replace(key, replaceValue);
-                }
+                    strTolog = strTolog.Replace(key, strDict[key]);
             }
 
             this.Connection.Connector.Log(strTolog);     	
         }
-
 
         public string DetermineTablename(string sql)
         {
@@ -133,13 +110,11 @@ namespace RORM
                 return null; // Minder of meer dan één tabel mag niet.
 
             foreach (Match m in coll)
-            {
                 if (m.Success)
                     return m.Groups[1].Value;
-            }
+
             return null;
         }
-
 
         public Task<int> ExecuteNonQueryAsync(string sql, params object[] parameters)
         {
@@ -186,8 +161,6 @@ namespace RORM
             return nrRowsAffected;
         }
 
-
-
         public IAsyncEnumerable<dynamic> ExecuteQueryAsync(string sql, params object[] parameters)
         {
             return ExecuteQueryAsync(sql, transaction: null, parameters);
@@ -233,7 +206,6 @@ namespace RORM
             cmd.ClearParameters();
             cmd.Close();
         }
-
 
         public async Task<List<Dictionary<string, object>>> GetDictionaryListAsync(string sqlStatement, params object[] parameters)
         {
